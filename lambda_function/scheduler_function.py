@@ -185,7 +185,7 @@ def lambda_handler(event, context):
         if not isDuplicateStopEvent:
             print("Publish Stop Events.")
             save_event("Stop", e)
-            publish_event( os.environ['CanlenderEventStopTopic'], "Start " + e['summary'], e)
+            publish_event( os.environ['CanlenderEventStopTopic'], "Stop" + e['summary'], e)
         else:
             print("Repeated Stop event - " + get_key(e))
         
