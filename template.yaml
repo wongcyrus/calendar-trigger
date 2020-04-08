@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  calendar-trigger
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: calendar-trigger
+    Description: >
+      This is a AWS SAM application that poll a public calendar url and publish start or stop event into SNS topic.
+    Author: Cyrus Wong
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: LICENSE.txt
+    ReadmeUrl: README.md
+    Labels: ['calendar','sns']
+    HomePageUrl: https://github.com/wongcyrus/calendar-trigger
+    SemanticVersion: 0.0.1
+    SourceCodeUrl: https://github.com/wongcyrus/calendar-trigger
+    
+Parameters:
+  CalendarUrl:
+    Type: String
+    Description: Public Class Calendar Url.
+    
+Globals:
+  Function:
+    Runtime: python3.7 # language used at runtime
+    Timeout: 180 # timeout for a given lambda function execution
+    MemorySize: 512
+
+Resources:
+  ScheduledFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda_function/
+      Handler: scheduler_function.lambda_handler
+      Policies:
+        - AWSLambdaExecute
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EventRecordsTable
+        - AmazonSNSFullAccess        
+      Environment:
+        Variables:
+          CalendarUrl: !Ref CalendarUrl
+          EventRecordsTable: !Ref EventRecordsTable
+          CanlenderEventStartTopic: !Ref CanlenderEventStartTopic
+          CanlenderEventStopTopic: !Ref CanlenderEventStopTopic
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0/15 * * * ? *)
+
+  EventRecordsTable:
+    Type: AWS::Serverless::SimpleTable
+
+  CanlenderEventStartTopic:
+    Type: AWS::SNS::Topic
+
+  CanlenderEventStopTopic:
+    Type: AWS::SNS::Topic
+    
+Outputs:
+  CanlenderEventStartTopic:
+    Value: !Ref CanlenderEventStartTopic
+  CanlenderEventStopTopic:
+    Value: !Ref CanlenderEventStopTopic

@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'calendar-trigger
+
+  '
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: calendar-trigger
+    Description: 'This is a AWS SAM application that poll a public calendar url and
+      publish start or stop event into SNS topic.
+
+      '
+    Author: Cyrus Wong
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: s3://cyruswong-sam-repo/175792518e4ac015ab6696d16c4f607e
+    ReadmeUrl: s3://cyruswong-sam-repo/6c9d47bf2164ca4756cd66555be71e40
+    Labels:
+    - calendar
+    - sns
+    HomePageUrl: https://github.com/wongcyrus/calendar-trigger
+    SemanticVersion: 0.0.1
+    SourceCodeUrl: https://github.com/wongcyrus/calendar-trigger
+Parameters:
+  CalendarUrl:
+    Type: String
+    Description: Public Class Calendar Url.
+Globals:
+  Function:
+    Runtime: python3.7
+    Timeout: 180
+    MemorySize: 512
+Resources:
+  ScheduledFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://cyruswong-sam-repo/8d290e2456d58ea69b14c1b27fcba5af
+      Handler: scheduler_function.lambda_handler
+      Policies:
+      - AWSLambdaExecute
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: EventRecordsTable
+      - AmazonSNSFullAccess
+      Environment:
+        Variables:
+          CalendarUrl:
+            Ref: CalendarUrl
+          EventRecordsTable:
+            Ref: EventRecordsTable
+          CanlenderEventStartTopic:
+            Ref: CanlenderEventStartTopic
+          CanlenderEventStopTopic:
+            Ref: CanlenderEventStopTopic
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0/15 * * * ? *)
+  EventRecordsTable:
+    Type: AWS::Serverless::SimpleTable
+  CanlenderEventStartTopic:
+    Type: AWS::SNS::Topic
+  CanlenderEventStopTopic:
+    Type: AWS::SNS::Topic
+Outputs:
+  CanlenderEventStartTopic:
+    Value:
+      Ref: CanlenderEventStartTopic
+  CanlenderEventStopTopic:
+    Value:
+      Ref: CanlenderEventStopTopic
