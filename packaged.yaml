@@ -33,7 +33,7 @@ Resources:
   ScheduledFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://cyruswong-sam-repo/8d290e2456d58ea69b14c1b27fcba5af
+      CodeUri: s3://cyruswong-sam-repo/68bcad1aa74774bcbf39dc37b6621cb1
       Handler: scheduler_function.lambda_handler
       Policies:
       - AWSLambdaExecute

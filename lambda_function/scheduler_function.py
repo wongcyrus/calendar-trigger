@@ -102,16 +102,13 @@ def get_events_from_ics(ics_string, window_start, window_end):
 
 
 def get_key(event):
-    return '{} - {} - {} - {}'.format(event['startdt'], event['enddt'], event['summary'], event['desc'])
-        
+    return '{} - {} - {} - {}'.format(event['startdt'], event['enddt'],
+                                      event['summary'], event['desc'])
+
 
 def is_duplicate(prefix, event):
     try:
-        response = table.get_item(
-            Key={
-                'id': prefix + "-" + get_key(event)
-            }
-        )
+        response = table.get_item(Key={'id': prefix + "-" + get_key(event)})
     except ClientError as e:
         print(e.response['Error']['Message'])
         return False
@@ -126,11 +123,7 @@ def is_duplicate(prefix, event):
 
 
 def save_event(prefix, event):
-    response = table.put_item(
-       Item={
-            'id': prefix + "-" + get_key(event)
-            }
-    )    
+    response = table.put_item(Item={'id': prefix + "-" + get_key(event)})
     print("PutItem succeeded:")
     print(json.dumps(response, indent=4))
 
@@ -139,13 +132,13 @@ def publish_event(topicArn, subject, message):
     def default(o):
         if isinstance(o, (date, datetime)):
             return o.isoformat()
-    message["Source"] = "Calendar-Trigger"        
-    response = sns.publish(
-        TopicArn=topicArn,
-        Message= json.dumps(message, default=default),
-        Subject= subject
-    )
+
+    message["Source"] = "Calendar-Trigger"
+    response = sns.publish(TopicArn=topicArn,
+                           Message=json.dumps(message, default=default),
+                           Subject=subject)
     print(response)
+
 
 def lambda_handler(event, context):
     url = os.environ['CalendarUrl']
@@ -155,7 +148,7 @@ def lambda_handler(event, context):
 
     now = datetime.now(timezone.utc)
     window_start = now - timedelta(minutes=30)
-    window_end = now + timedelta(minutes=30)
+    window_end = now + timedelta(minutes=15)
     events = get_events_from_ics(ics_string, window_start, window_end)
 
     for e in events:
@@ -165,18 +158,19 @@ def lambda_handler(event, context):
         if not isDuplicateStartEvent:
             print("Publish Start Events.")
             save_event("Start", e)
-            publish_event( os.environ['CanlenderEventStartTopic'], "Start " + e['summary'], e)
+            publish_event(os.environ['CanlenderEventStartTopic'],
+                          "Start " + e['summary'], e)
         else:
             print("Repeated Start event - " + get_key(e))
-            
-            
-    window_start = now - timedelta(minutes=45)
-    window_end = now + timedelta(minutes=30)
+
+    window_start = now - timedelta(minutes=60)
+    window_end = now - timedelta(minutes=30)
     past_events = get_events_from_ics(ics_string, window_start, window_end)
 
-    ended_event_keys = list(set(map(get_key,past_events)) - set(map(get_key,events)))
+    ended_event_keys = list(
+        set(map(get_key, past_events)) - set(map(get_key, events)))
     ended_events = [x for x in past_events if get_key(x) in ended_event_keys]
-    
+
     print(ended_events)
     for e in ended_events:
         print("Publish Stop Events.")
@@ -185,7 +179,7 @@ def lambda_handler(event, context):
         if not isDuplicateStopEvent:
             print("Publish Stop Events.")
             save_event("Stop", e)
-            publish_event( os.environ['CanlenderEventStopTopic'], "Stop" + e['summary'], e)
+            publish_event(os.environ['CanlenderEventStopTopic'],
+                          "Stop" + e['summary'], e)
         else:
             print("Repeated Stop event - " + get_key(e))
-        
